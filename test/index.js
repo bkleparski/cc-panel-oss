@@ -1,0 +1,26 @@
+// Node 24 resolves an explicit test/ argument as a module.
+require('./mozg.test');
+require('./attention.test');
+require('./codex-sessions.test');
+require('./mozg-tabs.test');
+require('./mozg-waiting.test');
+require('./attachments.test');
+require('./calendar.test');
+require('./attachments-server.test');
+require('./session-search.test');
+require('./panels.test');
+require('./original-bytes.test');
+require('./clip-history.test');
+require('./agent-cmds.test');
+require('./usage.test');
+require('./usage-mini.test');
+require('./usage-alerts.test');
+require('./codex-usage.test');
+require('./look.test');
+require('./transcript.test');
+require('./session-sort.test');
+require('./chat-links.test');
+require('./tmux-status.test');
+require('./shell-session.test');
+require('./term-keys.test');
+require('./nav-keys.test');

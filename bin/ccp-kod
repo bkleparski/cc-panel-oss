@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""ccp-kod: jednorazowy kod logowania do cc-panel (ważny 30 min, jedno użycie).
+
+Wklej kod w pole logowania PWA zamiast tokenu. Panel trzyma tylko skrót SHA-256 kodu
+(~/.config/cc-panel/login-codes/<skrót>), więc kod w historii czatu jest po użyciu lub wygaśnięciu bezwartościowy.
+"""
+import hashlib, os, secrets, sys, time
+from pathlib import Path
+
+TTL = 1800
+ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'  # bez 0/O, 1/I/L
+DIR = Path.home() / '.config' / 'cc-panel' / 'login-codes'
+
+DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+now = time.time()
+for f in DIR.iterdir():  # sprzątanie wygasłych
+    try:
+        if float(f.read_text().strip() or 0) < now:
+            f.unlink()
+    except (OSError, ValueError):
+        pass
+
+raw = ''.join(secrets.choice(ALPHABET) for _ in range(8))
+digest = hashlib.sha256(raw.encode()).hexdigest()
+tmp = DIR / f'.{digest}.tmp'
+fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+with os.fdopen(fd, 'w') as fh:
+    fh.write(f'{now + TTL:.0f}\n')
+os.rename(tmp, DIR / digest)
+
+if '--raw' in sys.argv:  # sam kod (Skrót iOS kopiuje go do schowka)
+    print(f'{raw[:4]}-{raw[4:]}')
+    sys.exit(0)
+print(f'Kod logowania: {raw[:4]}-{raw[4:]}   (ważny 30 min, jedno użycie)')
+print('Wklej go w pole „Token” w PWA: https://panel.example.com albo https://panel.your-tailnet.ts.net')

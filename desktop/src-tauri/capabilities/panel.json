@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "panel",
+  "description": "Remote panel has no native IPC permissions. UI actions flow only from Rust to DOM.",
+  "windows": ["panel"],
+  "local": false,
+  "remote": { "urls": ["https://panel.example.com/*", "https://panel.your-tailnet.ts.net/*"] },
+  "permissions": []
+}

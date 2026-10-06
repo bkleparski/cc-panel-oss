@@ -1,0 +1,19 @@
+{
+  "name": "cc-panel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mobilny panel do sesji Claude Code i Codex w tmux",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@event-calendar/build": "5.15.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "node-pty": "^1.0.0",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0"
+  }
+}

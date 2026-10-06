@@ -1,0 +1,7 @@
+{
+  "name": "cc-panel-desktop",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": { "tauri": "tauri", "check": "node --check src-tauri/src/panel.js && node test/panel.test.cjs && node test/chat.test.cjs" },
+  "devDependencies": { "@tauri-apps/cli": "~2.11.0" }
+}

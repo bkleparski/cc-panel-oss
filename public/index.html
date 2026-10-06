@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0e1014">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenci">
+<title>CC Panel</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/vendor/xterm.css">
+<link rel="stylesheet" href="/style.css">
+<!-- rozmiar tekstu z localStorage przed pierwszym malowaniem (bez mignięcia) -->
+<script src="/look.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- logowanie -->
+  <section id="v-login" class="view" hidden>
+    <form id="login-form" class="login">
+      <div class="logo">⌁</div>
+      <h1>CC Panel</h1>
+      <p class="muted">Token albo jednorazowy kod z <code>ccp-kod</code></p>
+      <input id="login-token" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Token albo kod XXXX-XXXX" required>
+      <button class="btn primary" type="submit">Zaloguj</button>
+      <p id="login-err" class="err"></p>
+    </form>
+  </section>
+
+  <!-- lista sesji -->
+  <section id="v-list" class="view" hidden>
+    <header class="bar">
+      <a id="btn-dysp" class="btn dysp-btn" href="#/mozg" aria-label="Dyspozytor" title="Wróć do Dyspozytora" data-nav="dysp"><span aria-hidden="true">‹ 📡</span><span class="dysp-label">Dyspozytor</span></a>
+      <a class="btn chat-btn" href="#/chat" title="Claude i ChatGPT"><span class="hi-box" data-hi="chat"></span><span class="chat-label">CHAT</span></a>
+      <h1>Sesje</h1>
+      <span id="list-meta" class="muted small"></span>
+      <button id="list-usage" class="usage-mini off" type="button" aria-expanded="false" aria-controls="list-usage-pop" hidden></button>
+      <span class="hdr-actions"></span>
+      <button id="btn-refresh" class="icon-btn" aria-label="Odśwież">↻</button>
+    </header>
+    <section id="list-usage-pop" class="usage usage-pop" aria-label="Limit planu Claude i Codex" hidden></section>
+    <div class="sess-search" role="search">
+      <input id="sess-q" type="search" placeholder="Szukaj sesji (nazwa, RC, projekt)" aria-label="Szukaj sesji" title="Szukaj sesji (/ albo ⌘K, Esc czyści)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <span id="sess-q-count" class="muted small" aria-live="polite"></span>
+      <button id="sess-q-clear" class="icon-btn small-btn" type="button" aria-label="Wyczyść wyszukiwanie" hidden>✕</button>
+      <button id="sess-sort" class="sort-chip" type="button" aria-label="Zmień kolejność sesji">↕ Uwaga</button>
+    </div>
+    <main id="sessions" class="sessions"></main>
+    <button id="btn-new" class="fab">＋ Nowa sesja</button>
+  </section>
+
+  <section id="v-mozg" class="view" hidden>
+    <header class="bar"><a id="btn-sessions" class="btn sessions-btn" href="#/sesje" title="Lista sesji" data-nav="sessions"><span class="hi-box" data-hi="list"></span><span class="sessions-label">SESJE</span><span id="sessions-count" class="sessions-count"></span><span id="sessions-attn" class="sessions-attn" hidden></span></a><a id="btn-chat" class="btn chat-btn" href="#/chat" title="Claude i ChatGPT"><span class="hi-box" data-hi="chat"></span><span class="chat-label">CHAT</span></a><h1 id="mozg-title">Dyspozytor</h1><button id="mozg-panels" class="icon-btn" type="button" aria-label="Podpięte panele" title="Podpięte panele Herdr" hidden>🔗</button><button id="mozg-usage" class="usage-mini off" type="button" aria-expanded="false" aria-controls="mozg-usage-pop" hidden></button><button id="mozg-archive" class="icon-btn" type="button" aria-label="Archiwizuj zakładkę" title="Archiwizuj zakładkę" hidden>⋯</button><button id="mozg-shell" class="icon-btn shell-btn" type="button" aria-label="Shell" aria-pressed="false" aria-controls="shell-dock" title="Shell w tmux (ccp-shell)" data-nav="terminal">&gt;_</button><button id="mozg-status" class="mozg-st" type="button" aria-expanded="false" aria-controls="mozg-status-pop"><span class="mozg-st-ico"></span><span id="mozg-status-text" class="muted small"></span></button><button id="mozg-more" class="icon-btn more-btn" type="button" aria-label="Więcej" title="Więcej" aria-haspopup="menu" aria-expanded="false" aria-controls="mozg-more-menu"><span class="hi-box" data-hi="more"></span></button><span class="hdr-actions"></span>
+      <!-- telefon (≤599 px): pełny tekst stanu po tapnięciu ikony i menu ⋯ z rzadkimi akcjami (przyciski wyżej zostają, menu je klika) -->
+      <p id="mozg-status-pop" class="hdr-pop status-pop" role="status" hidden></p>
+      <div id="mozg-more-menu" class="hdr-pop more-menu" role="menu" aria-label="Więcej" hidden>
+        <button type="button" role="menuitem" data-sel="#mozg-panels"><span class="hi-box" data-hi="link"></span>Podpięte panele</button>
+        <button type="button" role="menuitem" data-sel="#mozg-shell" class="mm-shell"><span class="hi-box mm-glyph">&gt;_</span>Shell (tmux)</button>
+        <button type="button" role="menuitem" data-sel="#v-mozg .look-btn"><span class="hi-box" data-hi="aa"></span>Wygląd</button>
+        <a role="menuitem" href="#/kalendarz"><span class="hi-box" data-hi="cal"></span>Kalendarz</a>
+        <button type="button" role="menuitem" data-sel="#mozg-archive"><span class="hi-box" data-hi="archive"></span>Archiwizuj zakładkę</button>
+      </div></header>
+    <section id="mozg-usage-pop" class="usage usage-pop" aria-label="Limit planu Claude i Codex" hidden></section>
+    <nav id="mozg-tabs" aria-label="Zakładki projektów"></nav>
+    <main id="mozg-thread" class="mozg-thread"></main>
+    <p id="mozg-error" class="err" role="status"></p>
+    <div id="mozg-files" class="mozg-files" hidden></div>
+    <form id="mozg-form" class="input-bar">
+      <input id="mozg-file" type="file" accept="image/*" multiple hidden>
+      <button id="mozg-attach" class="btn" type="button" aria-label="Dodaj obraz" title="Dodaj obraz (zdjęcie, zrzut ekranu; wklej albo przeciągnij)">📎</button>
+      <textarea id="mozg-text" rows="3" maxlength="20000" placeholder="Wiadomość do dyspozytora…"></textarea>
+      <button id="mozg-send" class="btn primary" type="submit">Wyślij</button>
+    </form>
+    <div id="mozg-drop" class="mozg-drop" aria-hidden="true" hidden><div class="mozg-drop-box"><span class="mozg-drop-ico">⤓</span><b>Upuść obrazy</b><span id="mozg-drop-hint"></span></div></div>
+    <aside id="shell-dock" class="shell-dock" aria-label="Shell w tmux" hidden>
+      <div id="shell-resize" class="shell-resize" role="separator" aria-orientation="vertical" aria-controls="shell-dock" aria-label="Szerokość shella" tabindex="0"
+        title="Przeciągnij, żeby zmienić szerokość shella (strzałki też). Dwuklik: szerokość domyślna"></div>
+      <div class="shell-head"><b>shell</b><span class="muted small">tmux ccp-shell · Ctrl+`</span><span id="shell-conn" class="muted small" role="status"></span>
+        <button id="shell-close" class="icon-btn small-btn" type="button" aria-label="Zamknij dok (sesja zostaje)" title="Zamknij dok - sesja tmux zostaje" data-nav="terminal">✕</button></div>
+      <div class="shell-term"><div id="shell-xterm"></div><pre id="shell-sel" class="shell-sel" hidden></pre></div>
+      <!-- telefon: ten sam pasek co w terminalu sesji (public/term-keys.js); na komputerze z myszą ukryty -->
+      <div id="shell-keys" class="keys shell-keys" aria-label="Klawisze shella">
+        <button type="button" class="key-accent" data-act="paste" title="Wklej ze schowka systemowego (bez Entera)">Wklej</button>
+        <button type="button" class="key-accent" data-act="select" aria-pressed="false" title="Tekst shella do zaznaczania i kopiowania">Zaznacz</button>
+        <button type="button" class="key-accent" data-act="clips" aria-label="Historia schowka">📋</button>
+        <button type="button" data-k="esc">Esc</button>
+        <button type="button" data-k="ctrlc">^C</button>
+        <button type="button" data-k="tab">Tab</button>
+        <button type="button" data-k="up">↑</button>
+        <button type="button" data-k="down">↓</button>
+        <button type="button" data-k="left">←</button>
+        <button type="button" data-k="right">→</button>
+        <button type="button" data-k="enter">⏎</button>
+        <button type="button" data-k="bs">⌫</button>
+        <button type="button" data-k="ctrlr" title="Szukaj w historii">^R</button>
+        <button type="button" data-k="ctrld">^D</button>
+        <button type="button" data-k="ctrll" title="Wyczyść ekran">^L</button>
+        <button type="button" data-k="ctrlz">^Z</button>
+        <button type="button" data-s="|">|</button>
+        <button type="button" data-s="~">~</button>
+        <button type="button" data-s="/">/</button>
+        <button type="button" data-s="-">-</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- CHAT: kafelki Claude i ChatGPT (chat-links.js); iPhone -> natywne aplikacje, Mac (CC Panel.app) -> okno powłoki -->
+  <section id="v-chat" class="view" hidden>
+    <header class="bar">
+      <a id="chat-dysp" class="btn dysp-btn" href="#/mozg" aria-label="Dyspozytor" title="Dyspozytor" data-nav="dysp"><span aria-hidden="true">‹ 📡</span><span class="dysp-label">Dyspozytor</span></a>
+      <a id="chat-sessions" class="btn sessions-btn" href="#/sesje" title="Lista sesji" data-nav="sessions"><span class="hi-box" data-hi="list"></span><span class="sessions-label">SESJE</span></a>
+      <h1>Chat</h1>
+    </header>
+    <main id="chat-tiles" class="chat-tiles"></main>
+  </section>
+
+  <!-- kalendarz (tylko odczyt) -->
+  <section id="v-cal" class="view" hidden>
+    <header class="bar"><a id="cal-back" class="btn" href="#/sesje">‹ <span id="cal-back-label">Sesje</span></a><h1>Kalendarz</h1><span id="cal-meta" class="muted small"></span>
+      <button id="cal-refresh" class="icon-btn" aria-label="Odśwież">↻</button></header>
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button id="cal-today" class="btn" type="button">Dzisiaj</button>
+        <button id="cal-prev" class="icon-btn" type="button" aria-label="Poprzedni">‹</button>
+        <button id="cal-next" class="icon-btn" type="button" aria-label="Następny">›</button>
+        <h2 id="cal-title"></h2>
+      </div>
+      <div id="cal-views" class="cal-seg" role="group" aria-label="Widok">
+        <button type="button" data-v="day">Dzień</button><button type="button" data-v="week">Tydzień</button><button type="button" data-v="month">Miesiąc</button><button type="button" data-v="list">Lista</button>
+      </div>
+      <div id="cal-filters" class="cal-filters" role="group" aria-label="Źródła">
+        <button type="button" class="chip" data-f="cron"><i class="sw sw-cron"></i>Crony</button>
+        <button type="button" class="chip" data-f="timer"><i class="sw sw-timer"></i>Timery</button>
+        <button type="button" class="chip" data-f="mozg"><i class="sw sw-mozg"></i>Mózg</button>
+        <button type="button" class="chip" data-f="rutyna"><i class="sw sw-rutyna"></i>Rutyna</button>
+        <button type="button" class="chip" data-f="system"><i class="sw sw-sys"></i>Systemowe</button>
+      </div>
+    </div>
+    <p id="cal-warn" class="cal-warn" role="status" hidden></p>
+    <div class="cal-body">
+      <aside id="cal-mini" class="cal-mini" hidden></aside>
+      <div id="cal" class="cal-host ec-dark"></div>
+    </div>
+  </section>
+  <dialog id="dlg-cal" class="sheet cal-sheet">
+    <div class="dlg-head"><h2 id="cal-detail-title"></h2><button id="cal-detail-close" type="button" class="btn">Zamknij</button></div>
+    <div id="cal-detail"></div>
+  </dialog>
+
+  <!-- terminal -->
+  <section id="v-term" class="view" hidden>
+    <header class="bar term-bar">
+      <button id="btn-back" class="icon-btn" aria-label="Wróć">‹</button>
+      <span id="t-dot" class="dot"></span>
+      <div class="t-title"><b id="t-name"></b><span id="t-status" class="muted small"></span></div>
+      <button id="btn-rc" class="chip rc-chip" hidden>RC</button>
+      <button id="btn-log" class="chip" aria-pressed="false">Log</button>
+      <button id="btn-look-term" class="icon-btn look-btn" type="button" aria-label="Wygląd: rozmiar tekstu i terminala" title="Wygląd (rozmiar tekstu, A−/A+ terminala)">Aa</button>
+      <button id="btn-kill" class="icon-btn danger" aria-label="Zakończ sesję">✕</button>
+    </header>
+    <div class="term-wrap">
+      <div id="xterm"></div>
+      <pre id="log" hidden></pre>
+      <div id="t-conn" class="conn" hidden>Łączenie…</div>
+    </div>
+    <div id="keys" class="keys">
+      <button id="btn-model" class="key-accent">⚙ Model</button>
+      <button id="btn-bang" class="key-accent" aria-label="Polecenia z !">! cmd</button>
+      <button id="btn-clips" class="key-accent" aria-label="Schowek">📋 Schowek</button>
+      <button data-k="esc">Esc</button>
+      <button data-k="ctrlc">^C</button>
+      <button data-k="stab">⇧Tab</button>
+      <button data-k="tab">Tab</button>
+      <button data-k="up">↑</button>
+      <button data-k="down">↓</button>
+      <button data-k="left">←</button>
+      <button data-k="right">→</button>
+      <button data-k="enter">⏎</button>
+      <button data-s="1">1</button>
+      <button data-s="2">2</button>
+      <button data-s="3">3</button>
+      <button data-s="y">y</button>
+      <button data-s="n">n</button>
+      <button data-s="/">/</button>
+      <button data-k="bs">⌫</button>
+      <button data-k="ctrld">^D</button>
+    </div>
+    <form id="input-form" class="input-bar">
+      <textarea id="input" rows="1" placeholder="Wiadomość do agenta…" autocapitalize="sentences"></textarea>
+      <button class="btn primary send" type="submit" aria-label="Wyślij">➤</button>
+    </form>
+  </section>
+
+  <!-- arkusz Wygląd (przycisk Aa): motyw, rozmiar tekstu, gęstość listy, terminal; ustawienia tylko tego urządzenia (public/look.js) -->
+  <dialog id="dlg-look" class="sheet look-sheet" aria-labelledby="look-title">
+    <div class="dlg-head"><h2 id="look-title">Wygląd</h2><button type="button" class="btn" id="look-close">Gotowe</button></div>
+    <section id="look-theme" class="look-group">
+      <h3 id="look-theme-h">Motyw</h3>
+      <div id="look-themes" class="look-themes" role="radiogroup" aria-labelledby="look-theme-h"></div>
+      <p id="look-theme-hint" class="muted small look-theme-hint" aria-live="polite"></p>
+    </section>
+    <section class="look-group">
+      <h3 id="look-size-h">Tekst panelu</h3>
+      <div id="look-size" class="look-seg" role="radiogroup" aria-labelledby="look-size-h"></div>
+    </section>
+    <section class="look-group">
+      <h3 id="look-density-h">Gęstość listy sesji</h3>
+      <div id="look-density" class="look-seg two" role="radiogroup" aria-labelledby="look-density-h"></div>
+    </section>
+    <section class="look-group">
+      <h3 id="look-term-h">Terminal i log</h3>
+      <div class="look-term" role="group" aria-labelledby="look-term-h">
+        <button type="button" class="btn" id="look-term-dec" aria-label="Mniejsza czcionka terminala">A−</button>
+        <output id="look-term-val" aria-live="polite"></output>
+        <button type="button" class="btn" id="look-term-inc" aria-label="Większa czcionka terminala">A+</button>
+      </div>
+    </section>
+    <section class="look-group">
+      <h3>Statusy sesji</h3>
+      <div id="look-legend" class="look-legend"></div>
+    </section>
+    <p class="muted small look-note">Zapisane tylko na tym urządzeniu (iPhone i MacBook mają osobne ustawienia).</p>
+  </dialog>
+
+  <!-- powiadomienia push -->
+  <dialog id="dlg-push" class="sheet">
+    <div class="dlg-head">
+      <h2>Powiadomienia</h2>
+      <button type="button" class="btn" id="push-close">Zamknij</button>
+    </div>
+    <h3 class="section">Wymaga uwagi</h3>
+    <div id="attention-list" class="notif-list"></div>
+    <p id="push-info" class="muted small"></p>
+    <label class="check"><input type="checkbox" id="push-done" checked> Gdy agent skończy pracę</label>
+    <label class="check"><input type="checkbox" id="push-approval" checked> Gdy agent prosi o zgodę</label>
+    <label class="check"><input type="checkbox" id="push-mozg" checked> Dyspozytor</label>
+    <label class="check"><input type="checkbox" id="push-limit" checked> Limit Claude 5h/7d skończy się przed resetem</label>
+    <label class="check"><input type="checkbox" id="push-limit-codex" checked> Limit Codex 5h/7d powyżej 90%</label>
+    <p id="push-err" class="err"></p>
+    <div class="row">
+      <button type="button" class="btn" id="push-off" hidden>Wyłącz</button>
+      <button type="button" class="btn" id="push-test" hidden>Test</button>
+      <button type="button" class="btn primary" id="push-on">Włącz</button>
+    </div>
+    <details id="notification-history"><summary>Historia ▸</summary>
+    <div id="push-history" class="notif-list"></div></details>
+  </dialog>
+
+  <!-- szybka zmiana modelu / effort w działającej sesji -->
+  <dialog id="dlg-model" class="sheet">
+    <div class="dlg-head">
+      <h2 id="model-title">Model i effort</h2>
+      <button type="button" class="btn" id="model-close">Zamknij</button>
+    </div>
+    <div id="model-body"></div>
+  </dialog>
+
+  <!-- schowek: historia skopiowanych tekstów, tapnięcie wkleja do sesji (bez Entera) -->
+  <dialog id="dlg-clips" class="sheet clips-sheet" aria-label="Schowek">
+    <div class="dlg-head">
+      <h2>Schowek</h2>
+      <button type="button" class="btn" id="clips-close">Zamknij</button>
+    </div>
+    <div class="row clips-actions">
+      <button type="button" class="btn" id="clips-read">📋 Ze schowka systemowego</button>
+    </div>
+    <form id="clips-form" class="clips-form">
+      <textarea id="clips-text" rows="2" placeholder="albo wklej tutaj…" autocapitalize="off" autocomplete="off" spellcheck="false"></textarea>
+      <button type="submit" class="btn primary" id="clips-add">Dodaj</button>
+    </form>
+    <p id="clips-msg" class="muted small"></p>
+    <div id="clips-list" class="clips-list"></div>
+    <button type="button" class="btn danger-btn wide" id="clips-clear">Wyczyść wszystko</button>
+  </dialog>
+
+  <!-- polecenia od agentów: wybór sesji (z czatu Dyspozytora) i potwierdzenie uruchomienia -->
+  <dialog id="dlg-run-target" class="sheet run-sheet" aria-label="Wybierz sesję">
+    <div class="dlg-head">
+      <h2 id="rt-title">Gdzie uruchomić?</h2>
+      <button type="button" class="btn" id="rt-close">Anuluj</button>
+    </div>
+    <pre id="rt-cmd" class="run-cmd small-cmd"></pre>
+    <p id="rt-msg" class="muted small"></p>
+    <div id="rt-list" class="dir-results rt-list"></div>
+  </dialog>
+
+  <dialog id="dlg-run" class="sheet run-sheet" aria-label="Potwierdź uruchomienie">
+    <div class="dlg-head">
+      <h2>Uruchomić w sesji?</h2>
+    </div>
+    <div class="run-target"><span class="muted small">Sesja</span><b id="run-target"></b><span id="run-status" class="small"></span></div>
+    <div id="run-danger" class="run-danger" role="alert" hidden></div>
+    <span class="muted small" id="run-cmd-label">Polecenie</span>
+    <pre id="run-cmd" class="run-cmd"></pre>
+    <div id="run-sent-wrap" hidden>
+      <span class="muted small">Wieloliniowe - wyślę jako jedno polecenie „!”:</span>
+      <pre id="run-sent" class="run-cmd small-cmd"></pre>
+    </div>
+    <p class="muted small">Wpiszę „!”, potem polecenie i Enter w tej sesji. Wynik zobaczysz w terminalu, agent też go dostanie.</p>
+    <p id="run-why" class="err"></p>
+    <div class="row run-btns">
+      <button type="button" class="btn" id="run-cancel">Anuluj</button>
+      <button type="button" class="btn primary" id="run-go">Uruchom</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-mozg-image" aria-label="Podgląd obrazu">
+    <button id="mozg-image-x" class="mozg-image-x" type="button" aria-label="Zamknij podgląd">✕</button>
+    <div id="mozg-image-scroll" class="mozg-image-scroll"><img id="mozg-image-full" alt="Załącznik"></div>
+    <div class="mozg-image-bar">
+      <span id="mozg-image-name" class="muted small"></span>
+      <span id="mozg-image-status" class="small" role="status"></span>
+      <button id="mozg-image-download" class="btn" type="button">Pobierz</button>
+      <button id="mozg-image-close" class="btn" type="button">Zamknij</button>
+    </div>
+  </dialog>
+  <dialog id="dlg-mozg-project">
+    <div class="dlg-head"><h2>Zakładka projektu</h2><button id="mozg-project-close" type="button" class="btn">Zamknij</button></div>
+    <input id="mozg-project-search" type="search" placeholder="Szukaj projektu…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p id="mozg-project-path" class="muted small"></p>
+    <p id="mozg-project-error" class="err" role="status"></p>
+    <div id="mozg-project-list"></div>
+  </dialog>
+  <dialog id="dlg-mozg-panels">
+    <div class="dlg-head"><h2 id="mp-title">Podpięte panele</h2><button id="mp-close" type="button" class="btn">Zamknij</button></div>
+    <p class="muted small">Gdy podpięty panel skończy turę, zakładka dostaje powiadomienie z końcówką jego wyjścia. Dyspozytor go nie zamyka i nie restartuje.</p>
+    <h3 class="section">Podpięte do tej zakładki</h3>
+    <div id="mp-bound" class="mp-list"></div>
+    <p id="mp-ok" class="mp-ok small" role="status"></p>
+    <h3 class="section">Podepnij panel</h3>
+    <input id="mp-search" type="search" placeholder="Szukaj panelu (etykieta, id, tytuł)…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="mp-form" class="mp-form" hidden>
+      <div class="mp-picked"><span class="muted small">Panel</span><b id="mp-picked"></b><button id="mp-unpick" type="button" class="btn">Zmień</button></div>
+      <label class="field">Zakładka<select id="mp-thread"></select></label>
+      <label class="field">Min. odstęp powiadomień (minuty, puste = domyślnie)<input id="mp-interval" type="number" inputmode="numeric" min="1" max="1440" placeholder="np. 30"></label>
+      <button id="mp-bind" type="button" class="btn primary wide">Podepnij</button>
+    </div>
+    <div id="mp-list" class="mp-list"></div>
+    <p id="mp-hidden" class="muted small"></p>
+    <p id="mp-error" class="err" role="status"></p>
+  </dialog>
+  <!-- nowa sesja -->
+  <dialog id="dlg-new">
+    <form id="new-form" method="dialog" autocomplete="off">
+      <div class="dlg-head">
+        <button class="btn" value="cancel" formnovalidate>Anuluj</button>
+        <h2>Nowa sesja</h2>
+        <button id="btn-create" class="btn primary" value="ok">Uruchom</button>
+      </div>
+      <p id="new-err" class="err"></p>
+      <div id="machine-seg" class="seg seg-small" role="radiogroup" hidden></div>
+      <div id="backend-seg" class="seg seg-small" role="radiogroup" hidden>
+        <label><input type="radio" name="backend" value="herdr" checked><span>w herdr</span></label>
+        <label><input type="radio" name="backend" value="tmux"><span>w tmux</span></label>
+      </div>
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="kind" value="claude" checked><span>Claude</span></label>
+        <label><input type="radio" name="kind" value="codex"><span>Codex</span></label>
+        <label><input type="radio" name="kind" value="shell"><span>Shell</span></label>
+      </div>
+      <div class="field">
+        <span>Katalog projektu</span>
+        <button type="button" id="dir-picked" class="dir-picked" hidden>
+          <span id="dir-picked-path"></span><span class="dir-change">zmień</span>
+        </button>
+        <div id="dir-browser">
+          <input id="dir-search" type="search" placeholder="Szukaj, np. macbook" enterkeyhint="search"
+                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <div class="dir-panel">
+            <div class="dir-nav">
+              <button type="button" id="dir-up" class="icon-btn" aria-label="Wstecz">‹</button>
+              <div id="dir-crumbs" class="crumbs"></div>
+            </div>
+            <div id="dir-results" class="dir-results"></div>
+            <div id="subdir-row" class="subdir-row" hidden>
+              <input id="subdir-name" placeholder="Nazwa nowego katalogu" enterkeyhint="done"
+                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+              <button type="button" id="subdir-create" class="btn primary">Utwórz</button>
+            </div>
+            <div id="dir-actions" class="dir-actions">
+              <button type="button" id="dir-new" class="btn">＋ Nowy</button>
+              <button type="button" id="dir-choose" class="btn primary">✓ Wybierz ten katalog</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="dir">
+      </div>
+      <div class="field agent-only model-row">
+        <label>Model
+          <select name="model" id="new-model"></select>
+        </label>
+        <label>Effort
+          <select name="effort" id="new-effort"></select>
+        </label>
+      </div>
+      <label class="field">Nazwa sesji (opcjonalnie)
+        <input name="slabel" placeholder="auto" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <label class="field agent-only">Pierwsze polecenie (opcjonalnie)
+        <textarea name="prompt" rows="3" placeholder="Co ma zrobić agent?"></textarea>
+      </label>
+      <label class="check claude-only"><input type="checkbox" name="rc" checked> Remote Control (aplikacja Claude na telefonie)</label>
+      <label class="check agent-only"><input type="checkbox" name="cont"> Kontynuuj ostatnią rozmowę w tym katalogu</label>
+      <label class="check agent-only warn"><input type="checkbox" name="yolo"> Bez pytań o zgodę (niebezpieczne)</label>
+    </form>
+  </dialog>
+</div>
+
+<script src="/vendor/xterm.js"></script>
+<script src="/vendor/addon-fit.js"></script>
+<script src="/mozg-tabs.js"></script>
+<script src="/session-search.js"></script>
+<script src="/session-sort.js"></script>
+<script src="/usage-mini.js"></script>
+<script src="/status-icons.js"></script>
+<script src="/hdr-icons.js"></script>
+<script src="/chat-links.js"></script>
+<script src="/mozg-images.js"></script>
+<script src="/mozg-panels.js"></script>
+<script src="/mozg-waiting.js"></script>
+<script src="/clip-history.js"></script>
+<script src="/term-keys.js"></script>
+<script src="/nav-keys.js"></script>
+<script src="/agent-cmds.js"></script>
+<script src="/calendar.js"></script>
+<script src="/shell-dock.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

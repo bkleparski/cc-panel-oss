@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CC Panel",
+  "version": "0.2.0",
+  "identifier": "com.example.cc-panel",
+  "build": { "frontendDist": "../assets" },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "security": {
+      "capabilities": ["panel"],
+      "csp": "default-src 'none'; script-src https://panel.example.com https://panel.your-tailnet.ts.net; style-src 'unsafe-inline' https://panel.example.com https://panel.your-tailnet.ts.net; img-src data: blob: https://panel.example.com https://panel.your-tailnet.ts.net; connect-src https://panel.example.com https://panel.your-tailnet.ts.net wss://panel.example.com wss://panel.your-tailnet.ts.net; font-src https://panel.example.com https://panel.your-tailnet.ts.net; frame-src 'none'; object-src 'none'; base-uri 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app"],
+    "icon": ["icons/icon.png"],
+    "macOS": { "minimumSystemVersion": "11.0", "signingIdentity": "-" }
+  }
+}
